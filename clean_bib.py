@@ -20,9 +20,13 @@ def customizations(record):
     record = type(record)
     record = page_double_hyphen(record)
     record = convert_to_unicode(record)
-    ## delete the following keys.
-    unwanted = ["doi", "url", "abstract", "file", "gobbledegook", "isbn", "link", "keyword", "mendeley-tags", "annote", "pmid", "chapter", "institution", "issn", "month"]
-    for val in unwanted:
+    record_keys = list(record.keys())
+
+    ## it deletes the keys that do not appear here.
+    ## ENTRYTYPE AND ID are mandatory
+    wanted = ["ENTRYTYPE", "ID","author", "journal", "number", "pages", "title", "volumen", "year"]
+    record_unwanted = list(set(record_keys) - set(wanted))
+    for val in record_unwanted:
         record.pop(val, None)
     return record
 
