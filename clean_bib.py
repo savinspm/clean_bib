@@ -1,11 +1,16 @@
 import datetime
+import sys
+import os.path
 import bibtexparser
 from bibtexparser.bparser import BibTexParser
 from bibtexparser.bwriter import BibTexWriter
 from bibtexparser.customization import *
 
-input_b = "library.bib"
-output_b = "library_clean.bib"
+if not len(sys.argv) == 3:
+    print("Error. python clean_bib.py <input.bib> <output.bib>")
+
+input_b = sys.argv[1]
+output_b = sys.argv[2]
 
 now = datetime.datetime.now()
 print("{0} Cleaning duff bib records from {1} into {2}".format(now, input_b, output_b))
@@ -48,11 +53,29 @@ else :
     print(errs)
     sys.exit(errs)
 
+
+# Now, the output file existence is check. If it exist, entries are not update
+# only new entries are inserted in output file.
+if os.path.isfile(output_b):
+    with open(output_b) as new_bibtex_file:
+        new_bib_database = bibtexparser.load(new_bibtex_file, parser=parser)
+        
+        for entry_input in bib_database.entries:
+            find = False
+            for entry_output in new_bib_database.entries:
+                if entry_input["ID"] == entry_output["ID"]:
+                    find = True
+            if not find:
+                new_bib_database.entries.append(entry_input)
+else:
+    new_bib_database = bib_database
+
+# Write output file file
 bibtex_str = None
 if bib_database:
     writer = BibTexWriter()
     writer.order_entries_by = ('author', 'year', 'type')
-    bibtex_str = bibtexparser.dumps(bib_database, writer)
+    bibtex_str = bibtexparser.dumps(new_bib_database, writer)
     #print(str(bibtex_str))
     with open(output_b, "w") as text_file:
         print(bibtex_str, file=text_file)
