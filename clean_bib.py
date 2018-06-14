@@ -24,12 +24,12 @@ def customizations(record):
     """
     record = type(record)
     record = page_double_hyphen(record)
-    record = convert_to_unicode(record)
+    record = homogenize_latex_encoding(record)
     record_keys = list(record.keys())
 
     ## it deletes the keys that do not appear here.
     ## ENTRYTYPE AND ID are mandatory
-    wanted = ["ENTRYTYPE", "ID","author", "journal", "number", "pages", "title", "volumen", "year"]
+    wanted = ["ENTRYTYPE", "ID","author", "journal", "number", "pages", "title", "volume", "year", "publisher"]
     record_unwanted = list(set(record_keys) - set(wanted))
     for val in record_unwanted:
         record.pop(val, None)
@@ -42,6 +42,7 @@ with open(input_b) as bibtex_file:
     parser.customization = customizations
     parser.ignore_nonstandard_types = False
     bib_database = bibtexparser.load(bibtex_file, parser=parser)
+print("{0} Number of entries in inputfile: {1}".format(datetime.datetime.now(), len(bib_database.entries)))
 
 if bib_database :
     now = datetime.datetime.now()
@@ -57,22 +58,32 @@ else :
 # Now, the output file existence is check. If it exist, entries are not update
 # only new entries are inserted in output file.
 if os.path.isfile(output_b):
+    print("{0} Exists {1}".format(datetime.datetime.now(), output_b))
     with open(output_b) as new_bibtex_file:
+        parser = BibTexParser()
+        parser.customization = customizations
+        parser.ignore_nonstandard_types = False
         new_bib_database = bibtexparser.load(new_bibtex_file, parser=parser)
-        
-        for entry_input in bib_database.entries:
+    print("{0} Number of entries in outputfile: {1}".format(datetime.datetime.now(), len(bib_database.entries)))
+    cont = 0
+    for entry_input in bib_database.entries:
             find = False
             for entry_output in new_bib_database.entries:
                 if entry_input["ID"] == entry_output["ID"]:
                     find = True
+                    break
+
             if not find:
+                cont += 1
                 new_bib_database.entries.append(entry_input)
+    print("{0} Number of new entries: {1}".format(datetime.datetime.now(), cont))
+
 else:
     new_bib_database = bib_database
 
 # Write output file file
 bibtex_str = None
-if bib_database:
+if new_bib_database:
     writer = BibTexWriter()
     writer.order_entries_by = ('author', 'year', 'type')
     bibtex_str = bibtexparser.dumps(new_bib_database, writer)
@@ -81,9 +92,7 @@ if bib_database:
         print(bibtex_str, file=text_file)
 
 if bibtex_str:
-    now = datetime.datetime.now()
-    success = "{0} Wrote to {1} with len {2}".format(now, output_b, len(bibtex_str))
-    print(success)
+        print("{0} Number of total entries: {1}".format(datetime.datetime.now(), len(new_bib_database.entries)))
 else:
     now = datetime.datetime.now()
     errs = "{0} Failed to write {1}".format(now, output_b)
